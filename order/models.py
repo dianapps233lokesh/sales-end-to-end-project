@@ -12,8 +12,8 @@ sales_channel_choices=[
 ]
 
 class Order(models.Model):
-    order_id=models.IntegerField()
-    item_type=models.ForeignKey('sale.ItemType',on_delete=models.CASCADE)
+    order_id=models.BigIntegerField(primary_key=True)
+    item_type=models.ForeignKey('sale.Product',on_delete=models.CASCADE)
     order_date=models.DateField()
     ship_date=models.DateField()
     order_priority=models.CharField(max_length=4, choices=order_priority_choices)
