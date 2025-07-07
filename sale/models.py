@@ -2,13 +2,13 @@ from django.db import models
 
 class location(models.Model):
     region=models.CharField(max_length=50)
-    country=models.CharField(max_length=50)
+    country=models.CharField(max_length=50,primary_key=True)
 
-class ItemType(models.Model):
-    item_type=models.CharField(50)
+    def __str__(self):
+        return self.country
 
 class Product(models.Model):
-    item_type=models.ForeignKey(ItemType,on_delete=models.CASCADE)
+    item_type=models.CharField(max_length=50,primary_key=True)
     unit_price=models.FloatField()
     unit_cost=models.FloatField()
 
