@@ -77,10 +77,9 @@ class Command(BaseCommand):
 
                     if i%1000000==0:
                         location.objects.bulk_create(loc,batch_size=10000,ignore_conflicts=True)
-                      
-                        Product.objects.bulk_create(products,batch_size=10000,ignore_conflicts=True)
-                        Order.objects.bulk_create(orders,batch_size=10000,ignore_conflicts=True)
-                        Sale.objects.bulk_create(sales,batch_size=10000,ignore_conflicts=True)
+                        Product.objects.bulk_create(products,batch_size=1000,ignore_conflicts=True)
+                        Order.objects.bulk_create(orders,batch_size=1000,ignore_conflicts=True)
+                        Sale.objects.bulk_create(sales,batch_size=1000,ignore_conflicts=True,unique_fields=['order_id_id'])
                         loc,products,sales,orders=[],[],[],[]
                     i=i+1
                     print(i)
