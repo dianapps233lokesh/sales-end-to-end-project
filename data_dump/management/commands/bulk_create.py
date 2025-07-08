@@ -26,7 +26,7 @@ class Command(BaseCommand):
 
             for line in f:
                 try:     
-                    line=line.split(',')
+                    line=line.strip().split(',')
                     
                     if line[0]=='Region':
                         continue

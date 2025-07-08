@@ -6,11 +6,14 @@ from utils.logger import logging
 from utils.exceptions import SaleException
 import sys
 import concurrent.futures
+from itertools import islice
+import time
    
 logging.info(f"All imports done successfully.")
+# start=time.time()
 
 class Command(BaseCommand):
-    k=0
+    
     help='Custom dump command for data insert into DB by bulk create'
  
 
@@ -18,10 +21,15 @@ class Command(BaseCommand):
         parser.add_argument('file_path',type=str,help='Path for CSV file')
 
     def bulkcreate(self,unsaved_list,batch_size):
-        location.objects.bulk_create(unsaved_list[0],batch_size=batch_size)
-        Product.objects.bulk_create(unsaved_list[1],batch_size=batch_size)
-        Order.objects.bulk_create(unsaved_list[2],batch_size=batch_size)
-        Sale.objects.bulk_create(unsaved_list[3],batch_size=batch_size)
+        loc, products, orders, sales=unsaved_list
+        if loc:
+            location.objects.bulk_create(loc,batch_size=batch_size)
+        if products:
+            Product.objects.bulk_create(products,batch_size=batch_size)
+        if orders:
+            Order.objects.bulk_create(orders,batch_size=batch_size)
+        if sales:
+            Sale.objects.bulk_create(sales,batch_size=batch_size)
 
     def parse_line(self, line):
         try:
@@ -51,15 +59,15 @@ class Command(BaseCommand):
                 total_cost=line[-2],
                 total_profit=line[-1][:-2]
             )
-            k+=1
-            print(k)
+            
             return (loc_obj, product_obj, order_obj, sale_obj, line[1], line[2], line[6])
         except Exception as e:
             raise SaleException(e,sys)
 
     def handle(self, *args, **kwargs):
+        start=time.time()
         file_path = kwargs['file_path']
-        BATCH = 500000
+        BATCH = 1000
 
         loc, products, orders, sales = [], [], [], []
         seen_countries = set()
@@ -67,48 +75,64 @@ class Command(BaseCommand):
         seen_orders = set()
         seen_sales = set()
 
-        parse_executor = concurrent.futures.ThreadPoolExecutor(max_workers=8)
-        insert_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+        list_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+        insert_executor = concurrent.futures.ProcessPoolExecutor(max_workers=4)
 
         try:
             with open(file_path, 'r') as f:
-                lines = f.readlines()
-                # print(lines)
+                i = 0
+                while True:
+                    try:
+                        lines_chunk=list(islice(f,BATCH))
+                        if not lines_chunk:
+                            break
+                        
 
-            i = 0
-            results = parse_executor.map(self.parse_line, lines)
+                        loc, products, orders, sales = [], [], [], []
+                        results = list_executor.map(self.parse_line, lines_chunk)
 
-            for result in results:
-                if not result:
-                    continue
+                        for result in results:
+                            try:
+                                if not result:
+                                    continue
 
-                loc_obj, product_obj, order_obj, sale_obj, country, product, order_id = result
+                                loc_obj, product_obj, order_obj, sale_obj, country, product, order_id = result
 
-                if country not in seen_countries:
-                    loc.append(loc_obj)
-                    seen_countries.add(country)
+                                if country not in seen_countries:
+                                    loc.append(loc_obj)
+                                    seen_countries.add(country)
 
-                if product not in seen_products:
-                    products.append(product_obj)
-                    seen_products.add(product)
+                                if product not in seen_products:
+                                    products.append(product_obj)
+                                    seen_products.add(product)
 
-                if order_id not in seen_orders:
-                    orders.append(order_obj)
-                    seen_orders.add(order_id)
+                                if order_id not in seen_orders:
+                                    orders.append(order_obj)
+                                    seen_orders.add(order_id)
 
-                if order_id not in seen_sales:
-                    sales.append(sale_obj)
-                    seen_sales.add(order_id)
+                                if order_id not in seen_sales:
+                                    sales.append(sale_obj)
+                                    seen_sales.add(order_id)
 
-                i += 1
-                if i % BATCH == 0:
-                    insert_executor.submit(self.bulk_insert, loc.copy(), products.copy(), orders.copy(), sales.copy())
-                    loc.clear()
-                    products.clear()
-                    orders.clear()
-                    sales.clear()
-                    logging.info(f"Processed {i} lines...")
-                print(i)
+                                i += 1
+                                print(i)
+                            except Exception as e:
+                                logging.error(f"Error occured in the filename {__file__} and the error message is {e}")
+                                continue
+
+                        # insert_executor.submit(self.bulkcreate, [loc.copy(), products.copy(), orders.copy(), sales.copy()],1000)
+                        insert_executor.submit(location.objects.bulk_create, loc.copy(), BATCH)
+                        insert_executor.submit(Product.objects.bulk_create, products.copy(), BATCH)
+                        insert_executor.submit(Order.objects.bulk_create, orders.copy(), BATCH)
+                        insert_executor.submit(Sale.objects.bulk_create, sales.copy(), BATCH)
+
+                        logging.info(f"Data dumped {BATCH} lines...")
+                    except Exception as e:
+                        logging.error(f"Error occured in the filename {__file__} and the error message is {e}")
+                        continue
 
         except Exception as e:
-            raise SaleException(e, sys)
+            raise SaleException(e,sys)
+        
+        end=time.time()
+        print('total time is: ',end-start)
