@@ -3,26 +3,9 @@ from data_dump.tasks import insert_bulk_chunk
 import datetime
 from itertools import islice
 import time
-# from celery import shared_task
-from sale.models import location, Product, Sale
-from order.models import Order
+from utils.logger import logging
 
-
-# @shared_task
-# def insert_bulk_chunk(parsed_data):
-#     loc, products, orders, sales = [], [], [], []
-
-#     for entry in parsed_data:
-#         loc.append(location(**entry["location"]))
-#         products.append(Product(**entry["product"]))
-#         orders.append(Order(**entry["order"]))
-#         sales.append(Sale(**entry["sale"]))
-
-    
-#     location.objects.bulk_create(loc, ignore_conflicts=True, batch_size=1000)
-#     Product.objects.bulk_create(products, ignore_conflicts=True, batch_size=1000)
-#     Order.objects.bulk_create(orders, ignore_conflicts=True, batch_size=1000)
-#     Sale.objects.bulk_create(sales, ignore_conflicts=True, batch_size=1000)
+logging.info(f"all imports done successfully.")
 
 class Command(BaseCommand):
     help = 'Dispatch CSV chunks to Celery for parallel bulk_create'
@@ -60,32 +43,33 @@ class Command(BaseCommand):
                     "total_profit": line[-1]
                 }
             }
-        except Exception:
-            return None
+        except Exception as e:
+            logging.error("error occurred in {__file__} in parse_line function")
+            return {"error":e}
 
     def handle(self, *args, **kwargs):
-        i=0
+      
         start = time.time()
         file_path = kwargs['file_path']
         BATCH = 10000
+        try:
+            with open(file_path, 'r') as f:
+                while True:
+                    lines_chunk = list(islice(f, BATCH))
+                    if not lines_chunk:
+                        break
 
-        with open(file_path, 'r') as f:
-            while True:
-                lines_chunk = list(islice(f, BATCH))
-                if not lines_chunk:
-                    break
+                    parsed_batch = []
 
-                parsed_batch = []
-
-                for line in lines_chunk:
-                    parsed = self.parse_line(line)
-                    if parsed:
-                        parsed_batch.append(parsed)
-                    i+=1
-                    print(i)
-
-                if parsed_batch:
-                    insert_bulk_chunk.delay(parsed_batch)
-
-        end = time.time()
-        print(f"Tasks dispatched. Total time: {end - start:.2f} seconds")
+                    for line in lines_chunk:
+                        parsed = self.parse_line(line)
+                        if parsed:
+                            parsed_batch.append(parsed)
+    
+                    if parsed_batch:
+                        insert_bulk_chunk.delay(parsed_batch)
+            end = time.time()
+            print(f"Tasks dispatched. Total time: {end - start:.2f} seconds")
+        except Exception as e:
+            logging.error(f"error is {e}")
+            return None
