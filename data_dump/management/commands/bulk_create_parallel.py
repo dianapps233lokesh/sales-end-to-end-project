@@ -12,6 +12,8 @@ import time
 logging.info(f"All imports done successfully.")
 # start=time.time()
 
+
+
 class Command(BaseCommand):
     
     help='Custom dump command for data insert into DB by bulk create'
@@ -22,14 +24,12 @@ class Command(BaseCommand):
 
     def bulkcreate(self,unsaved_list,batch_size):
         loc, products, orders, sales=unsaved_list
-        if loc:
-            location.objects.bulk_create(loc,batch_size=batch_size)
-        if products:
-            Product.objects.bulk_create(products,batch_size=batch_size)
-        if orders:
-            Order.objects.bulk_create(orders,batch_size=batch_size)
-        if sales:
-            Sale.objects.bulk_create(sales,batch_size=batch_size)
+        # location.objects.bulk_create(loc,batch_size=batch_size)
+        # Product.objects.bulk_create(products,batch_size=batch_size)
+        # Order.objects.bulk_create(orders,batch_size=batch_size)
+        Sale.objects.bulk_create(sales,batch_size=batch_size)
+
+    
 
     def parse_line(self, line):
         try:
@@ -57,7 +57,7 @@ class Command(BaseCommand):
                 unit_sold=line[-6],
                 total_revenue=line[-3],
                 total_cost=line[-2],
-                total_profit=line[-1][:-2]
+                total_profit=line[-1]
             )
             
             return (loc_obj, product_obj, order_obj, sale_obj, line[1], line[2], line[6])
@@ -113,20 +113,23 @@ class Command(BaseCommand):
                                 if order_id not in seen_sales:
                                     sales.append(sale_obj)
                                     seen_sales.add(order_id)
+                                    logging.info(f"added {order_id} item into sale table")
 
                                 i += 1
                                 print(i)
                             except Exception as e:
                                 logging.error(f"Error occured in the filename {__file__} and the error message is {e}")
                                 continue
-
-                        # insert_executor.submit(self.bulkcreate, [loc.copy(), products.copy(), orders.copy(), sales.copy()],1000)
-                        insert_executor.submit(location.objects.bulk_create, loc.copy(), BATCH)
-                        insert_executor.submit(Product.objects.bulk_create, products.copy(), BATCH)
-                        insert_executor.submit(Order.objects.bulk_create, orders.copy(), BATCH)
-                        insert_executor.submit(Sale.objects.bulk_create, sales.copy(), BATCH)
-
+                        
+                        # insert_executor.submit(bulkcreate, [loc, products, orders, sales],batch_size=BATCH)
+                        insert_executor.submit(location.objects.bulk_create, loc, batch_size=1000)
+                        insert_executor.submit(Product.objects.bulk_create, products, batch_size=1000)
+                        insert_executor.submit(Order.objects.bulk_create, orders, batch_size=1000)
+                        # insert_executor.submit(Sale.objects.bulk_create, sales, batch_size=1000)
+                        Sale.objects.bulk_create(sales,batch_size=1000)
                         logging.info(f"Data dumped {BATCH} lines...")
+
+
                     except Exception as e:
                         logging.error(f"Error occured in the filename {__file__} and the error message is {e}")
                         continue

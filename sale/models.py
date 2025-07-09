@@ -13,7 +13,7 @@ class Product(models.Model):
     unit_cost=models.FloatField()
 
 class Sale(models.Model):
-    order_id=models.ForeignKey('order.Order',on_delete=models.CASCADE)
+    order_id=models.OneToOneField('order.Order',on_delete=models.CASCADE)
     unit_sold=models.IntegerField()
     total_revenue=models.FloatField()
     total_cost=models.FloatField()

@@ -5,7 +5,7 @@ import datetime
 from utils.logger import logging
 from utils.exceptions import SaleException
 import sys
-   
+import time
 logging.info(f"All imports done successfully.")
 
 class Command(BaseCommand):
@@ -15,6 +15,7 @@ class Command(BaseCommand):
         parser.add_argument('file_path',type=str,help='Path for CSV file')
 
     def handle(self,*args,**kwargs):
+        start=time.time()
         file_path=kwargs['file_path']
         with open(file_path,'r') as f:
             i=1
@@ -75,7 +76,7 @@ class Command(BaseCommand):
                         seen_sales.add(line[6])
                     logging.info(f"line number {i} has been inserted into Sales table.")
 
-                    if i%1000000==0:
+                    if i%1000==0:
                         location.objects.bulk_create(loc,batch_size=1000)
                         Product.objects.bulk_create(products,batch_size=1000)
                         Order.objects.bulk_create(orders,batch_size=1000)
@@ -83,8 +84,8 @@ class Command(BaseCommand):
                         loc,products,sales,orders=[],[],[],[]
                     i=i+1
                     print(i)
-
                 except Exception as e:
                     raise SaleException(e,sys)
             logging.info("All data inserted into DB successfully.")
+        print("total time: ",time.time-start)
              
