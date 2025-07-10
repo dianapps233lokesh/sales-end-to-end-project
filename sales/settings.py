@@ -37,9 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'rest_framework',
+    'rest_framework.authtoken',
     'sale',
     'order',
     'data_dump',
+    'accounts',   
 ]
 
 MIDDLEWARE = [
@@ -129,3 +133,10 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DATE_INPUT_FORMATS=['%m/%d/%Y']
+
+#Celery Configuration
+CELERY_BROKER_URL='redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT=['json']
+CELERY_TASK_SERIALIZER='json'
+
+AUTH_USER_MODEL='accounts.MyUser'
