@@ -3,23 +3,32 @@ from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 import random
 from django.contrib.auth.password_validation import validate_password
+from django.conf import settings 
 
 
-class MyUser(AbstractUser):
-    username=models.CharField(max_length=100, unique=True)
-    email=models.EmailField(unique=True)
-    password=models.CharField(max_length=100,validators=[validate_password])
-    confirm_password=models.CharField(max_length=100)
-
-
-class OTP(models.Model):
-    user=models.ForeignKey(MyUser,on_delete=models.CASCADE)
-    otp_code=models.CharField(max_length=6)
+class Parent(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract=True
+
+class MyUser(Parent,AbstractUser):
+    email=models.EmailField(unique=True)
+
+
+    def __str__(self):
+        return self.email
+  
+
+class OTP(Parent):
+    mail = models.EmailField(unique=True)
+    otp = models.CharField(max_length=6)
+    data = models.JSONField()
+
 
     def is_valid(self):
-        return self.created_at >= timezone.now()-timezone.timedelta(minutes=10)
+        return self.updated_at >= timezone.now()-timezone.timedelta(minutes=10)
 
-    def generate_otp(self):
-        return random.randint(100000,999999)
-
+ 
+    
