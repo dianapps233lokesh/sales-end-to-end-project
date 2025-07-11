@@ -31,3 +31,9 @@ class OTPSerializer(serializers.ModelSerializer):
     class Meta:
         model=OTP
         fields='__all__'
+
+
+class LoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=User
+        fields=['email','password',]
