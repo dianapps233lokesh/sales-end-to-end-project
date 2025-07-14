@@ -1,8 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-import random
-from django.contrib.auth.password_validation import validate_password
 from django.conf import settings 
 
 
@@ -18,7 +16,7 @@ class MyUser(Parent,AbstractUser):
 
 
     def __str__(self):
-        return self.email
+        return self.username
   
 
 class OTP(Parent):
@@ -26,9 +24,5 @@ class OTP(Parent):
     otp = models.CharField(max_length=6)
     data = models.JSONField()
 
-
     def is_valid(self):
         return self.updated_at >= timezone.now()-timezone.timedelta(minutes=10)
-
- 
-    

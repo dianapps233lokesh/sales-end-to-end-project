@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+from datetime import timedelta
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,7 +48,8 @@ INSTALLED_APPS = [
     'sale',
     'order',
     'data_dump',
-    'accounts',   
+    'accounts',  
+    'rest_framework_simplejwt' 
 ]
 
 MIDDLEWARE = [
@@ -82,11 +88,11 @@ WSGI_APPLICATION = 'sales.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'sale',
-        'USER': 'test',
-        'PASSWORD':'test@123',
-        'HOST':'localhost',
-        'PORT':'5432'
+        'NAME': os.getenv('NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD':os.getenv('PASSWORD'),
+        'HOST':os.getenv('HOST'),
+        'PORT':os.getenv('PORT'),
     }
 }
 
@@ -140,3 +146,26 @@ CELERY_ACCEPT_CONTENT=['json']
 CELERY_TASK_SERIALIZER='json'
 
 AUTH_USER_MODEL='accounts.MyUser'
+
+EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST='smtp.gmail.com'
+EMAIL_USE_TLS=True
+EMAIL_PORT=587
+EMAIL_HOST_USER=os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD=os.getenv('EMAIL_HOST_PASSWORD')
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+#     'DEFAULT_PERMISSION_CLASSES': (
+#             'rest_framework.permissions.IsAuthenticated',
+# )
+}
+
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1)
+}
