@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .serializers import RegisterSerializer,LoginSerializer,LogoutSerializer,ProfileupdateSerializer
+from .serializers import RegisterSerializer,LogoutSerializer,ProfileupdateSerializer
 from django.contrib.auth import get_user_model
 from .emails import send_otp_via_email
 from rest_framework.views import APIView
@@ -10,7 +10,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from utils.logger import logging
 from rest_framework import status
-
 User=get_user_model()
 
 class RegisterAPI(APIView): 
@@ -72,7 +71,7 @@ class VerifyOTPAPI(APIView):
             except User.DoesNotExist:
                 user = None
             if user:
-                serializer = ProfileupdateSerializer(user, data=entry.data, context={'request': request})
+                serializer = ProfileupdateSerializer(user, data=entry.data,partial=True,context={'request': request})
                 logging.info("profile updater serialized")
                 if serializer.is_valid():
                     # print("serializer====",serializer)
@@ -93,7 +92,7 @@ class VerifyOTPAPI(APIView):
                     entry.delete()
                     return Response({ 
                         'message': 'Registration successful',
-                        'data':user
+                        'data':serializer.data,
                         },status=status.HTTP_200_OK)
         except Exception as e:
             return Response({ 
@@ -104,8 +103,7 @@ class VerifyOTPAPI(APIView):
 
 class LoginAPI(APIView):
     def post(self,request):
-        try:
-          
+        try:         
             try:
                 logging.info("Enter into the if block of serializer valid")
                 user=User.objects.get(email=request.data['email'])
@@ -117,7 +115,7 @@ class LoginAPI(APIView):
             user=authenticate(username=user.username, password=request.data['password'])
             if user:
                 logging.info("User details authenticated successfully")
-                refresh=RefreshToken.for_user(user)
+                refresh=RefreshToken.for_user(user)    #manually token generated here
                 logging.info(f"Token generated for user")
       
                 return Response({
@@ -139,12 +137,6 @@ class LoginAPI(APIView):
                         'message':"error occurred",
                         'data':str(e)
                 },status=status.HTTP_400_BAD_REQUEST)
-        
-class check(APIView):
-    permission_classes=[IsAuthenticated]
-
-    def get(self,request):
-        return Response("You are authenticated")
 
 class LogoutAPI(APIView):
     permission_classes=[IsAuthenticated]
@@ -153,8 +145,8 @@ class LogoutAPI(APIView):
         try:
             serializer=LogoutSerializer(data=request.data)
         
-            if serializer.is_valid():
-                serializer.save()
+            if serializer.is_valid():   
+                serializer.save()   # token blacklisted into serializer save method
                 return Response(
                     {
                         'message':"Refresh Token blacklisted successfully",
@@ -180,14 +172,16 @@ class LogoutAPI(APIView):
 
 class UpdateProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
-
+    '''PUT Here is updating all the fields including email thus required email verificaiton'''
     def put(self, request):
-
+        logging.info(f"requested data:{request.data}")
         user = request.user
+        logging.info(f"Email of current user is {user.email}")
+        logging.info(f"Email of provided by user for update is {request.data['email']}")
         serializer = ProfileupdateSerializer(user, data=request.data, context={'request': request})
 
         if serializer.is_valid():
-            otp=send_otp_via_email(serializer.validated_data['email'])
+            otp=send_otp_via_email(serializer.validated_data['email'])  # OTP Verification function called
             logging.info(f"serializer validated data in put: {serializer.validated_data}")
             logging.info(f"mail for user {serializer.data['email']}")
             OTP.objects.update_or_create(mail=serializer.data['email'],
@@ -195,7 +189,6 @@ class UpdateProfileAPIView(APIView):
                                              'otp':otp,
                                              'data':serializer.validated_data
                                          })
-            # serializer.save()
             return Response({
                 "message": "OTP generated successfully for fully update",
                 "data": serializer.data
@@ -204,19 +197,52 @@ class UpdateProfileAPIView(APIView):
             "message": "Validation failed",
             "data": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+    
 
-    # def patch(self, request):
-    #     user = request.user
-    #     serializer = ProfileupdateSerializer(user, data=request.data, partial=True, context={'request': request})
-
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response({
-    #             "message": "Profile updated successfully",
-    #             "data": serializer.data
-    #         }, status=status.HTTP_200_OK)
-
-    #     return Response({
-    #         "message": "Validation failed",
-    #         "data": serializer.errors
-    #     }, status=status.HTTP_400_BAD_REQUEST)
+    def patch(self,request):
+        logging.info("Entered into patch request")
+        user=request.user
+        current_email=user.email
+        requested_email=request.data.get('email',None)
+        serializer=ProfileupdateSerializer(user,data=request.data,partial=True,context={'request':request})
+        logging.info("Serializer created for the patch api user update")
+        try:
+            if serializer.is_valid():
+                logging.info("profile update serializer is valid into the patch api")
+                if requested_email and requested_email!=current_email:
+                    '''When updating email, verification required because user may enter invalid email'''
+                    otp=send_otp_via_email(serializer.validated_data['email'])  #OTP verification method called for email update
+                    logging.info(f"serializer validated data in patch: {serializer.validated_data}")
+                    logging.info(f"mail for user {serializer.data['email']}")
+                    OTP.objects.update_or_create(mail=serializer.data['email'],     #saving request data into otp relation temporarily
+                                            defaults={
+                                                'otp':otp,
+                                                'data':serializer.validated_data
+                                            })
+                    return Response({
+                    "message": "OTP generated successfully for partial update",
+                    "data": serializer.data
+                }, status=status.HTTP_200_OK)
+                else:
+                    '''
+                    No OTP Verification required thus directly updating into the database
+                    '''
+                    logging.info("into the else block and next line is serializer save methiod")
+                    serializer.save()
+                    logging.info("serializer saved successfully")
+                    return Response({
+                        'message':"profile updated for user without email verified",
+                        "data":serializer.data
+                    },
+                    status=status.HTTP_200_OK)
+            return Response({
+                'message':"Serializer not valid",
+                "data":None
+            },
+            status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                "message":"error occured",
+                "data":str(e)
+            },
+            status=status.HTTP_400_BAD_REQUEST)

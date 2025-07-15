@@ -84,10 +84,10 @@ class ProfileupdateSerializer(serializers.ModelSerializer):
         
     def update(self,instance,validated_data):
 
-            instance.first_name=validated_data['first_name']
-            instance.last_name=validated_data['last_name']
-            instance.email=validated_data['email']
-            instance.username=validated_data['username']
+            instance.first_name=validated_data.get('first_name',instance.first_name)
+            instance.last_name=validated_data.get('last_name',instance.last_name)
+            instance.email=validated_data.get('email',instance.email)
+            instance.username=validated_data.get('username',instance.username)
 
             instance.save()
 
