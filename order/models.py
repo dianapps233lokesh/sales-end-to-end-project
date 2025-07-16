@@ -12,6 +12,7 @@ sales_channel_choices=[
 ]
 
 class Order(models.Model):
+    user=models.ForeignKey('accounts.MyUser',on_delete=models.CASCADE,null=True)
     order_id=models.BigIntegerField(primary_key=True)
     item_type=models.ForeignKey('sale.Product',on_delete=models.CASCADE)
     order_date=models.DateField()

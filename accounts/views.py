@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .serializers import RegisterSerializer,LogoutSerializer,ProfileupdateSerializer
+from .serializers import RegisterSerializer,LogoutSerializer,ProfileupdateSerializer,CreateUserSerializer
 from django.contrib.auth import get_user_model
 from .emails import send_otp_via_email
 from rest_framework.views import APIView
@@ -10,6 +10,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from utils.logger import logging
 from rest_framework import status
+from django.contrib.auth.hashers import make_password
+
 User=get_user_model()
 
 class RegisterAPI(APIView): 
@@ -20,12 +22,18 @@ class RegisterAPI(APIView):
         logging.info(f"Serialized incoming data with register serializer")
         if serializer.is_valid():
             logging.info("register serializer is valid and otp send method called")
+
+            password = make_password(serializer.validated_data['password'])
             otp=send_otp_via_email(serializer.data['email'])
+            logging.info(f"your otp is {otp}")
             logging.info(f"otp generated and sent to the mail {serializer.validated_data['email']}")
             OTP.objects.update_or_create(mail=serializer.validated_data['email'],
                                          defaults={
                                              'otp':otp,
-                                             'data':serializer.validated_data
+                                             'data':{
+                                                 'email':serializer.validated_data['email'],
+                                                 'password':password
+                                             }
                                          })
             logging.info(f"mail, otp and user data came from post request saved temporary in OTP Model")
             return Response({
@@ -85,15 +93,19 @@ class VerifyOTPAPI(APIView):
                 }, status=status.HTTP_200_OK)
 
             else:        
-                serializer = RegisterSerializer(data=entry.data)
+                serializer = CreateUserSerializer(data=entry.data)
                 if serializer.is_valid():
                     user=serializer.save()
                     logging.info(f"User created into database {user}")
                     entry.delete()
+                    refresh=RefreshToken.for_user(user)
                     return Response({ 
                         'message': 'Registration successful',
-                        'data':serializer.data,
-                        },status=status.HTTP_200_OK)
+                        'data':{
+                            'access_token':str(refresh.access_token),
+                            'refresh_token':str(refresh)
+                        },
+                        },status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({ 
                         'message': 'error',
@@ -106,13 +118,13 @@ class LoginAPI(APIView):
         try:         
             try:
                 logging.info("Enter into the if block of serializer valid")
-                user=User.objects.get(email=request.data['email'])
+                user=User.objects.get(email=request.data['email'])  #getting user based upon email from db because in authenticate username is required not email
             except Exception as e:
                 return Response({ 'message':f"User not found for {request.data['email']}",
                         'data':str(e)},
                         status=status.HTTP_404_NOT_FOUND)
         
-            user=authenticate(username=user.username, password=request.data['password'])
+            user=authenticate(username=user.username, password=request.data['password'])  #returns authenticated user if exists or none
             if user:
                 logging.info("User details authenticated successfully")
                 refresh=RefreshToken.for_user(user)    #manually token generated here
@@ -198,7 +210,7 @@ class UpdateProfileAPIView(APIView):
             "data": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
     
-
+    '''If email is updated into patch then email verification required otherwise details updated directly without email verification'''
     def patch(self,request):
         logging.info("Entered into patch request")
         user=request.user
@@ -223,6 +235,12 @@ class UpdateProfileAPIView(APIView):
                     "message": "OTP generated successfully for partial update",
                     "data": serializer.data
                 }, status=status.HTTP_200_OK)
+                elif requested_email and requested_email==current_email:
+                    return Response({
+                        'message':"This email is already in use",
+                        'data':serializer.validated_data
+                    },
+                    status=status.HTTP_400_BAD_REQUEST)
                 else:
                     '''
                     No OTP Verification required thus directly updating into the database

@@ -13,7 +13,6 @@ class Parent(models.Model):
 class MyUser(Parent,AbstractUser):
     email=models.EmailField(unique=True)
 
-
     def __str__(self):
         return self.username
   
