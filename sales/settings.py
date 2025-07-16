@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     'order',
     'data_dump',
     'accounts',  
-    'rest_framework_simplejwt' 
+    'rest_framework_simplejwt', 
+    'rest_framework_simplejwt.token_blacklist', 
 ]
 
 MIDDLEWARE = [
@@ -158,6 +159,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_RENDERER_CLASSES':[
+        'accounts.renderers.CustomRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
 #     'DEFAULT_PERMISSION_CLASSES': (
 #             'rest_framework.permissions.IsAuthenticated',
 # )
