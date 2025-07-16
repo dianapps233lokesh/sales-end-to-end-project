@@ -22,7 +22,6 @@ class RegisterAPI(APIView):
         logging.info(f"Serialized incoming data with register serializer")
         if serializer.is_valid():
             logging.info("register serializer is valid and otp send method called")
-
             password = make_password(serializer.validated_data['password'])
             otp=send_otp_via_email(serializer.data['email'])
             logging.info(f"your otp is {otp}")
