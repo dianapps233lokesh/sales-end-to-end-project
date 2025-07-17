@@ -5,9 +5,10 @@ from .serializers import OrderSerializer
 from rest_framework import status
 from rest_framework import permissions
 from .models import Order
-from utils.logger import logging
+from utils.logger import logging 
+from rest_framework.pagination import PageNumberPagination
 
-class OrderAPI(APIView):
+class OrderAPI(APIView,PageNumberPagination):
     permission_classes=[permissions.IsAuthenticated]
     def post(self,request):
         try:
@@ -96,8 +97,34 @@ class OrderAPI(APIView):
             status=status.HTTP_400_BAD_REQUEST)
             
 
-    def delete(self,request):
-        pass
+    def delete(self,request,pk):
+        try:
+            order=Order.objects.get(pk=pk)
+        except Exception as e:
+            return Response({
+                'message':"Order not found",
+                "data":str(e)
+            },
+            status=status.HTTP_404_NOT_FOUND)
+        order.delete()
+        return Response({
+            'message':"Order deleted successfully",
+            'data':None
+        },
+        status=status.HTTP_200_OK)
+        
 
     def get(self,request):
-        pass
+        try:
+            orders=Order.objects.all()
+            paginator=PageNumberPagination()
+            paginator.page_size=10
+            paginated=paginator.paginate_queryset(orders,request,view=self)
+            serializer=OrderSerializer(paginated,many=True)
+            return paginator.get_paginated_response(serializer.data)
+        except Exception as e:
+            return Response({
+                'message':'error',
+                'data':str(e)
+            },
+            status=status.HTTP_400_BAD_REQUEST)
