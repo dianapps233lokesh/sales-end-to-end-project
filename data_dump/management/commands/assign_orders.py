@@ -17,8 +17,8 @@ class Command(BaseCommand):
         t=0
         i=0
         try:
-            users=list(User.objects.all())
-            logging.info(f"users list is {users}")
+            users=list(User.objects.filter(is_superuser=False))
+            logging.info(f"all the users without super user {users}")
             logging.info(f"top 100 order records from database {list(Order.objects.filter(user__isnull=True)[:100])}")
             while True:
                 try:

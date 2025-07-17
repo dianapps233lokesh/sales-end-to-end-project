@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .serializers import RegisterSerializer,LogoutSerializer,ProfileupdateSerializer,CreateUserSerializer
+from .serializers import RegisterSerializer,LogoutSerializer,ProfileupdateSerializer,CreateUserSerializer,UserSerializer
 from django.contrib.auth import get_user_model
 from .emails import send_otp_via_email
 from rest_framework.views import APIView
@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from .models import OTP
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from utils.logger import logging
 from rest_framework import status
 from django.contrib.auth.hashers import make_password
@@ -263,3 +263,22 @@ class UpdateProfileAPIView(APIView):
                 "data":str(e)
             },
             status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminAPI(APIView):
+    permission_classes=[IsAdminUser]
+    def get(self,request):
+        try:
+            users=User.objects.filter(is_superuser=False)
+            serializer=UserSerializer(users,many=True)
+            return Response({
+                'message':"All the users fetched successfully",
+                "data":serializer.data
+            },
+            status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                'message':"error",
+                "data":str(e)
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

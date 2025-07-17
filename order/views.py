@@ -78,6 +78,7 @@ class OrderAPI(APIView,PageNumberPagination):
         try:
             serializer=OrderSerializer(instance=order,data=request.data,partial=True)
             if serializer.is_valid():
+                logging.info(f"into the serializer and requested user is {request.user}")
                 serializer.save(user=request.user)
                 return Response({
                     'message':"Order data updated successfully.",
@@ -116,7 +117,15 @@ class OrderAPI(APIView,PageNumberPagination):
 
     def get(self,request):
         try:
-            orders=Order.objects.all()
+            if request.user.is_superuser or request.user.is_staff:
+                orders=Order.objects.all()
+            else:
+                logging.info(f"current user is {request.user.id} and {type(request.user.id)}")
+                # print("user__id====>",type(request.user.id))
+                # print("order===>",(type(Order.objects.all().first().user)))
+                
+                orders=Order.objects.all().filter(user=request.user.id)
+                logging.info(f"orders after filtered out are {orders}")
             paginator=PageNumberPagination()
             paginator.page_size=10
             paginated=paginator.paginate_queryset(orders,request,view=self)
@@ -128,3 +137,5 @@ class OrderAPI(APIView,PageNumberPagination):
                 'data':str(e)
             },
             status=status.HTTP_400_BAD_REQUEST)
+        
+
