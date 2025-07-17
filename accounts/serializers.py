@@ -30,6 +30,24 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
         return user
     
+class CreateUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['email', 'password']
+
+    def create(self, validated_data):
+        user = User(
+            email=validated_data['email'],
+            username=validated_data['email'].split('@')[0],
+            password=validated_data['password']
+        )
+       
+        user.save()
+        return user
+
+    
 class OTPSerializer(serializers.ModelSerializer):
     class Meta:
         model=OTP
@@ -44,9 +62,9 @@ class LoginSerializer(serializers.ModelSerializer):
 class LogoutSerializer(serializers.Serializer):
     refresh=serializers.CharField()
 
-    def validate(self,attr):
-        self.token=attr['refresh']
-        return attr
+    def validate(self,attrs):
+        self.token=attrs['refresh']
+        return attrs
 
     def save(self,**kwargs):
         try:
@@ -56,7 +74,6 @@ class LogoutSerializer(serializers.Serializer):
         
 class ProfileupdateSerializer(serializers.ModelSerializer):
     email=serializers.EmailField(required=True)
-
     class Meta:
         model=User
         fields=["username","first_name","last_name","email"]
