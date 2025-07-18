@@ -1,5 +1,6 @@
 from django.db import models
 import random
+import uuid
 
 order_priority_choices=[
     ('H','H'),
