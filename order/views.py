@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import OrderSerializer
@@ -121,9 +120,7 @@ class OrderAPI(APIView,PageNumberPagination):
                 orders=Order.objects.all()
             else:
                 logging.info(f"current user is {request.user.id} and {type(request.user.id)}")
-                # print("user__id====>",type(request.user.id))
-                # print("order===>",(type(Order.objects.all().first().user)))
-                
+            
                 orders=Order.objects.all().filter(user=request.user.id)
                 logging.info(f"orders after filtered out are {orders}")
             paginator=PageNumberPagination()
@@ -137,5 +134,3 @@ class OrderAPI(APIView,PageNumberPagination):
                 'data':str(e)
             },
             status=status.HTTP_400_BAD_REQUEST)
-        
-

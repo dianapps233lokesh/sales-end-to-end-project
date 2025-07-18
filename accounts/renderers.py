@@ -9,9 +9,6 @@ class CustomRenderer(BaseRenderer):
     charset='utf-8'
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        # logging.info(f"data : {data}")
-        # logging.info(f"accepted_media_type : {accepted_media_type}")
-        # logging.info(f"render_context : {renderer_context['response']}")
         response=renderer_context.get('response',None)
         status_code=response.status_code if response else 200
 
