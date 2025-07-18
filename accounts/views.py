@@ -283,7 +283,7 @@ class Userlist(APIView):
             },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-class Activate_Deactivate(APIView):
+class ActivateDeactivateView(APIView):
     permission_classes=[IsAdminUser]
 
     def post(self,request,user_id):

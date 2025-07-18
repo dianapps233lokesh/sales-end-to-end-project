@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterAPI,VerifyOTPAPI,LoginAPI,LogoutAPI,UpdateProfileAPIView,Userlist,Activate_Deactivate
+from .views import RegisterAPI,VerifyOTPAPI,LoginAPI,LogoutAPI,UpdateProfileAPIView,Userlist,ActivateDeactivateView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns=[
@@ -16,5 +16,5 @@ urlpatterns+=[
 
 urlpatterns+=[
     path('userlist/',Userlist.as_view(),name='user-list'),
-    path('Activate_Deactivate/<int:user_id>/',Activate_Deactivate.as_view(),name='active-deactive-userapi'),
+    path('Activate_Deactivate/<int:user_id>/',ActivateDeactivateView.as_view(),name='active-deactive-userapi'),
 ]

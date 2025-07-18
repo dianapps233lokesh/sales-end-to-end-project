@@ -7,6 +7,9 @@ from .models import Order
 from utils.logger import logging 
 from rest_framework.pagination import PageNumberPagination
 
+from rest_framework import viewsets
+
+'''
 class OrderAPI(APIView,PageNumberPagination):
     permission_classes=[permissions.IsAuthenticated]
     def post(self,request):
@@ -133,4 +136,12 @@ class OrderAPI(APIView,PageNumberPagination):
                 'message':'error',
                 'data':str(e)
             },
-            status=status.HTTP_400_BAD_REQUEST)
+            status=status.HTTP_400_BAD_REQUEST) 
+        
+'''
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset=Order.objects.all()
+    serializer_class=OrderSerializer
+    permission_classes=[permissions.IsAuthenticated]
