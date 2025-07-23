@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Room with Django Channels</title>
+
+  <style>
+    .sender {
+      background-color: #e0f7fa;
+      margin: 10px;
+      float: right;
+      padding: 8px;
+      border-radius: 10px;
+      clear: both;
+      width: fit-content;
+    }
+
+    .receiver {
+      background-color: #ffccbc;
+      margin: 10px;
+      float: left;
+      padding: 8px;
+      border-radius: 10px;
+      clear: both;
+      width: fit-content;
+    }
+
+    #messages {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Chat Room</h1>
+
+  <!-- Hidden input for current user -->
+  <input type="hidden" id="username" value="{{ request.user.username }}">
+
+  <!-- Chat message display area -->
+  <div id="messages"></div>
+
+  <!-- Chat input form -->
+  <form id="chat-form">
+    <input type="text" id="chat-message-input" placeholder="Type a message..." autocomplete="off" required>
+    <button type="submit">Send</button>
+  </form>
+
+  <!-- JavaScript -->
+  <script>
+    const senderName = document.getElementById('username').value;
+
+    const chatSocket = new WebSocket(
+      'ws://' + window.location.host + '/ws/chat/{{ other_username }}/'
+    );
+
+    chatSocket.onmessage = function (e) {
+      const data = JSON.parse(e.data);
+      if (data.type === 'chat') {
+        const messagesDiv = document.getElementById('messages');
+        const cssClass = (data.sender === senderName) ? 'sender' : 'receiver';
+        messagesDiv.insertAdjacentHTML('beforeend',
+          `<div class="${cssClass}"><p>${data.sender}: ${data.message}</p></div>`
+        );
+      }
+    };
+
+    document.getElementById('chat-form').onsubmit = function (e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-message-input');
+      const message = input.value.trim();
+      if (message) {
+        chatSocket.send(JSON.stringify({ 'message': message }));
+        input.value = '';
+      }
+    };
+  </script>
+
+</body>
+</html>
