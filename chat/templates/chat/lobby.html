@@ -36,9 +36,13 @@
 
 <body>
   <h1>Chat Room</h1>
+  <!-- Injected in <body> -->
+  <!-- <input type="hidden" id="username" value="lokeshsaini.eng">
+  <input type="hidden" id="token" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzUzMjcyNzg0LCJpYXQiOjE3NTMyNjkxODQsImp0aSI6ImFhNGE4ODMxMjlkMDRiY2NiMjZjMDFiM2FmNWVlOGZhIiwidXNlcl9pZCI6Mn0.FTQTo8fXrBW1tks1x-7dqpxPHF9kMCL5Z3xT54WQd0k"> -->
 
-  <!-- Hidden input for current user -->
-  <input type="hidden" id="username" value="{{ request.user.username }}">
+  <input type="hidden" id="username" value="lakkubhai.153">
+  <input type="hidden" id="token" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzUzMjcyNjYwLCJpYXQiOjE3NTMyNjkwNjAsImp0aSI6ImYyNTAxOWZkYjk5YjQ4OTVhMjRkODZhNDE1M2Y3MDc5IiwidXNlcl9pZCI6MX0.kbkcT0hU_-3VVEX5NjeJC2tZmflJLZ_E-3LaL13GNuU">
+
 
   <!-- Chat message display area -->
   <div id="messages"></div>
@@ -52,11 +56,13 @@
   <!-- JavaScript -->
   <script>
     const senderName = document.getElementById('username').value;
+  const token = document.getElementById('token').value;
+const otherUser = "{{ other_username }}";
+
 
     const chatSocket = new WebSocket(
-      'ws://' + window.location.host + '/ws/chat/{{ other_username }}/'
+      `ws://${window.location.host}/ws/chat/{{ other_username }}/?token=${token}`
     );
-
     chatSocket.onmessage = function (e) {
       const data = JSON.parse(e.data);
       if (data.type === 'chat') {
@@ -80,4 +86,5 @@
   </script>
 
 </body>
+
 </html>
