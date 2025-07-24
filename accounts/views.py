@@ -11,6 +11,8 @@ from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from utils.logger import logging
 from rest_framework import status
 from django.contrib.auth.hashers import make_password
+import csv
+from django.http import HttpResponse
 
 User=get_user_model()
 
@@ -318,3 +320,17 @@ class ActivateDeactivateView(APIView):
                     'data':str(e)
                 },
                 status=status.HTTP_400_BAD_REQUEST)
+        
+def generate_users_csv(request):
+    response=HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="users_collection.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['id', 'username', 'email','is_acive','is_superuser'])
+
+    users=User.objects.all()
+
+    for user in users:
+        writer.writerow([user.id,user.username,user.email,user.is_active,user.is_superuser])
+    
+    return response

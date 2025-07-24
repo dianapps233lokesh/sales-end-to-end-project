@@ -30,12 +30,14 @@ SECRET_KEY = 'django-insecure-9%^3biy^z2-k^9$po^qvx8-i=^bwasp!z_%*@93@(wfj*y6u()
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    # 'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -51,6 +53,7 @@ INSTALLED_APPS = [
     'accounts',  
     'rest_framework_simplejwt', 
     'rest_framework_simplejwt.token_blacklist', 
+    'chat',
 ]
 
 MIDDLEWARE = [
@@ -80,7 +83,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'sales.wsgi.application'
+ASGI_APPLICATION = 'sales.wsgi.application'
 
 
 # Database
@@ -176,4 +179,10 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1)
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
 }
