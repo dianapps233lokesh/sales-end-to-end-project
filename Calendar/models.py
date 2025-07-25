@@ -1,12 +1,12 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-
+from accounts.models import Parent
 User=get_user_model()
 
 # Create your models here.
 
 
-class AuthInfo(models.Model):
+class AuthInfo(Parent):
     user=models.ForeignKey(User,on_delete=models.CASCADE)
     access_token=models.TextField()
     refresh_token=models.TextField()
