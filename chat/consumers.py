@@ -59,7 +59,7 @@ class ChatConsumer(WebsocketConsumer):
                 user = JWTAuthentication().get_user(validated_token)
                 self.scope['user'] = user
             except Exception as e:
-                print(f"Token error: {e}")
+                logging.info(f"Token error {str(e)}")
                 self.close()
                 return
 
