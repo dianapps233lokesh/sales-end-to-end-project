@@ -32,7 +32,7 @@ def getServiceObj(user):
     except Exception as e:
         logging.info(f"error occured. No service object returned {str(e)}")
 
-def get_free_slots(busy_slots, start_of_day, end_of_day):
+def get_free_slots(busy_slots, start_of_day, end_of_day):           #returns the list of free slots
     free_slots = []
     if not busy_slots:
         return [(start_of_day, end_of_day)]
@@ -52,7 +52,7 @@ def get_free_slots(busy_slots, start_of_day, end_of_day):
 
 
 
-def get_busy(service,start_of_day,end_of_day):
+def get_busy(service,start_of_day,end_of_day): #return the list of busy slots
         body = {
             "timeMin": start_of_day.isoformat(),
             "timeMax": end_of_day.isoformat(),
@@ -63,11 +63,18 @@ def get_busy(service,start_of_day,end_of_day):
         return resp['calendars']['primary'].get('busy', [])
 
 
+
 def common_time(slots1, slots2, duration_min):
+    all_empty_slots = []
+
     for s1_start, s1_end in slots1:
         for s2_start, s2_end in slots2:
+            # Find overlapping time range
             start = max(s1_start, s2_start)
             end = min(s1_end, s2_end)
+
+            # Only include if it's long enough
             if (end - start) >= timedelta(minutes=duration_min):
-                return (start, start + timedelta(minutes=duration_min))
-    return None
+                all_empty_slots.append((start, end))
+
+    return all_empty_slots
