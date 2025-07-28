@@ -9,7 +9,6 @@ from rest_framework.pagination import PageNumberPagination
 
 from rest_framework import viewsets
 
-'''
 class OrderAPI(APIView,PageNumberPagination):
     permission_classes=[permissions.IsAuthenticated]
     def post(self,request):
@@ -137,8 +136,6 @@ class OrderAPI(APIView,PageNumberPagination):
                 'data':str(e)
             },
             status=status.HTTP_400_BAD_REQUEST) 
-        
-'''
 
 
 class OrderViewSet(viewsets.ModelViewSet):

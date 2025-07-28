@@ -10,7 +10,6 @@ from utils.utils import getServiceObj,get_busy,get_free_slots,common_time
 from datetime import datetime,timedelta
 import pytz
 
-
 class ValidateUser(APIView):
     permission_classes=[IsAuthenticated]
     def get(self,request):
@@ -27,7 +26,6 @@ class ValidateUser(APIView):
                         "access_token":credentials.token,"refresh_token":credentials.refresh_token,"expiry":credentials.expiry,
                         "token_uri":credentials.token_uri,"client_id":credentials.client_id,"client_secret":credentials.client_secret,"scopes":','.join(credentials.scopes)
                                     })
-         
             logging.info("data saved into database successfully")
             return Response({
                 'message':"user credentials generated",
@@ -54,7 +52,7 @@ class GetCalendars(APIView):
             return Response({
                 'message':"error",
                 'data':str(e)
-            },status=status.HTTP_401_UNAUTHORIZED)
+            },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class GetEvents(APIView):
     permission_classes=[IsAuthenticated]
@@ -71,13 +69,12 @@ class GetEvents(APIView):
             return Response({
                 'message':"error",
                 'data':str(e)
-            },status=status.HTTP_401_UNAUTHORIZED)
+            },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class GetFreeSlots(APIView):
     permission_classes=[IsAuthenticated]
 
     def post(self,request):
-        # logging.info(f"date is {date}")
         try:
             logging.info(f"current User id is {request.user}")
             target_email=request.data.get('email')
@@ -99,7 +96,14 @@ class GetFreeSlots(APIView):
             time_max = tz.localize(datetime.combine(date, datetime.max.time()))
 
             service1=getServiceObj(request.user)
-            target_user=AuthInfo.objects.get(user__email=target_email).user_id
+            try:
+                target_user=AuthInfo.objects.get(user__email=target_email).user_id
+            except Exception as e:
+                return Response({
+                    'message':'user has not provided its consent to access its calendar',
+                    'data':None
+                },
+                status=status.HTTP_404_NOT_FOUND)
             service2=getServiceObj(target_user)
             logging.info(f"Target user id is {target_user}")
 
@@ -114,12 +118,10 @@ class GetFreeSlots(APIView):
             logging.info(f"target user free slots: {free2}")
 
             slots = common_time(free1, free2, duration)
-            # logging.info()
             if not slots:
                 return Response({
                     "message":"no common empty slot found.",
                     "data":None
-
                 },
                 status=status.HTTP_404_NOT_FOUND)
             logging.info(f"Common empty slots are {slots}")
@@ -157,7 +159,7 @@ class AppointmentBook(APIView):
             
             tz = pytz.timezone('Asia/Kolkata') 
             start_time = datetime.strptime(date_time, "%d-%m-%Y %H:%M")
-            start_time = tz.localize(start_time)  
+            start_time = tz.localize(start_time)        #change to Asia/kolkata time zone if not already
             end_time = start_time + timedelta(minutes=duration)
 
             service1=getServiceObj(request.user)
@@ -183,11 +185,10 @@ class AppointmentBook(APIView):
                 'start': {'dateTime': start_meet, 'timeZone': 'Asia/Kolkata'},
                 'end': {'dateTime': end_meeting, 'timeZone': 'Asia/Kolkata'},
                 'attendees': [{'email': target_email}],
-                'description': 'Auto-scheduled based on free slots.'
-            }
+                'description': 'scheduled based on free slots.'
+                        }
             },
-            status=status.HTTP_200_OK)
-
+            status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logging.error(f"{str(e)}")
