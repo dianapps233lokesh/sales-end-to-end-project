@@ -1,8 +1,9 @@
 from django.urls import path,include
 from .views import OrderAPI
+from django.urls import re_path
 
 urlpatterns = [
-    path('order/',OrderAPI.as_view(),name="order-crud"),
+re_path(r'^(?P<version>v1|v2)/orders/$', OrderAPI.as_view(), name='order-list'),
     path('order/<int:pk>/',OrderAPI.as_view(),name="order-update"),
 ]
 
