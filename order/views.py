@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import OrderSerializer
+from .serializers import OrderSerializer,OrderSerializerv2
 from rest_framework import status
 from rest_framework import permissions
 from .models import Order
@@ -116,8 +116,9 @@ class OrderAPI(APIView,PageNumberPagination):
         status=status.HTTP_200_OK)
         
 
-    def get(self,request):
+    def get(self,request,*args,**kwargs):
         try:
+            logging.info(f"current version is {request.version}")
             if request.user.is_superuser or request.user.is_staff:
                 orders=Order.objects.all()
             else:
@@ -128,8 +129,14 @@ class OrderAPI(APIView,PageNumberPagination):
             paginator=PageNumberPagination()
             paginator.page_size=10
             paginated=paginator.paginate_queryset(orders,request,view=self)
-            serializer=OrderSerializer(paginated,many=True)
+
+            if request.version=='v2':       #URLPath API Versioning
+                serializer=OrderSerializerv2(paginated,many=True)
+            else:
+                serializer=OrderSerializer(paginated,many=True)
+
             return paginator.get_paginated_response(serializer.data)
+        
         except Exception as e:
             return Response({
                 'message':'error',

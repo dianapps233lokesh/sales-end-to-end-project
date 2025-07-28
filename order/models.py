@@ -13,12 +13,12 @@ sales_channel_choices=[
     ('Offline','Offline')
 ]
 
-def generate_unique_order_id():  #generate random id for the order_id in the Order model because inline random generator generates random value when server starts in terminal
+def generate_unique_order_id():  #generate random id for the order_id in the Order model because inline random generator generates random value only when server starts in terminal
     while True:
         id=random.randint(100000,99999999)
         if not Order.objects.filter(order_id=id).exists():
             return id
-        
+       
 
 class Order(models.Model):
     user=models.ForeignKey('accounts.MyUser',on_delete=models.CASCADE,null=True)

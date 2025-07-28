@@ -12,7 +12,7 @@ from utils.logger import logging
 from rest_framework import status
 from django.contrib.auth.hashers import make_password
 import csv
-from django.http import HttpResponse
+from django.http import HttpResponse,StreamingHttpResponse
 from rest_framework.decorators import api_view, permission_classes
 
 User=get_user_model()
@@ -322,19 +322,41 @@ class ActivateDeactivateView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST)
         
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated]) 
+# def generate_users_csv(request):
+#     response=HttpResponse(content_type='text/csv')
+#     response['Content-Disposition'] = 'attachment; filename="users_collection.csv"'
+
+#     writer = csv.writer(response)
+#     writer.writerow(['id', 'username', 'email','is_acive','is_superuser'])
+
+#     users=User.objects.all()
+
+#     for user in users:
+#         writer.writerow([user.id,user.username,user.email,user.is_active,user.is_superuser])
+    
+#     return response
+
+class Echo:
+    """An object that implements just the write method of the file-like interface."""
+    def write(self, value):
+        return value
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated]) 
 def generate_users_csv(request):
-    response=HttpResponse(content_type='text/csv')
+    # Generator to stream rows
+    def row_generator():
+        yield ['id', 'username', 'email', 'is_active', 'is_superuser']
+        for user in User.objects.all().iterator():
+            yield [user.id, user.username, user.email, user.is_active, user.is_superuser]
+
+    pseudo_buffer = Echo()
+    writer = csv.writer(pseudo_buffer)
+
+    response = StreamingHttpResponse((writer.writerow(row) for row in row_generator()), content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="users_collection.csv"'
-
-    writer = csv.writer(response)
-    writer.writerow(['id', 'username', 'email','is_acive','is_superuser'])
-
-    users=User.objects.all()
-
-    for user in users:
-        writer.writerow([user.id,user.username,user.email,user.is_active,user.is_superuser])
     
     return response
-
