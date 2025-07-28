@@ -21,5 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('chat.urls')),
     path('api/',include('accounts.urls')),
-    path('ord/',include('order.urls'))
+    path('ord/',include('order.urls')),
+    path('calendar/',include('Calendar.urls'))
 ]
